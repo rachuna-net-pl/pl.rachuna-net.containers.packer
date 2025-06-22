@@ -13,6 +13,7 @@ RUN apt-get update && apt-get --no-install-recommends install -y \
         curl \
         git \
         gnupg2 \
+        jq \
         lsb-release \
         openssh-client \
 # Add repository hashicorp
