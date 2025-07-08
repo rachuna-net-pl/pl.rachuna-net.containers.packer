@@ -7,23 +7,34 @@ LABEL Application='pl.rachuna-net.containers.terraform'
 LABEL Description='terraform container image'
 LABEL version="${CONTAINER_VERSION}"
 
-# Install packages
-RUN apt-get update && apt-get --no-install-recommends install -y \
-        ca-certificates \
+ENV DEBIAN_FRONTEND=noninteractive
+
+COPY scripts/ /opt/scripts/
+
+# Install system dependencies and ansible
+RUN apt-get update && apt-get install -y \
         curl \
         git \
         gnupg2 \
         jq \
         lsb-release \
         openssh-client \
-# Add repository hashicorp
-    && curl --proto "=https" -fsS https://apt.releases.hashicorp.com/gpg | gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg \
+    # Add repository hashicorp
+    && curl -fsSL https://apt.releases.hashicorp.com/gpg | gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg \
     && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/hashicorp.list \
-# Install Terraform
-    && apt-get update && apt-get --no-install-recommends install -y packer \
+    # Install Packer
+    && apt-get update && apt-get install -y packer \
     && apt-get upgrade -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
-    && useradd -u 1001 -m -s /bin/bash nonroot
+
+    # Make scripts executable
+    && chmod +x /opt/scripts/*.bash \
+
+    # Create a non-root user and set permissions
+    && useradd -m -s /bin/bash nonroot \
+    && chown -R nonroot:nonroot /opt/scripts
 
 USER nonroot
+
+ENTRYPOINT [ "/opt/scripts/entrypoint.bash" ]
